@@ -72,26 +72,23 @@ class SortableAdminBase(object):
             extra_context=extra_context)
 
 
-class SortableAdmin(SortableAdminBase, ModelAdmin):
-    """
-    Admin class to add template overrides and context objects to enable
-    drag-and-drop ordering.
-    """
-
-    class Meta:
-        abstract = True
+class SortableAdminMixin(SortableAdminBase):
 
     def get_urls(self):
-        urls = super(SortableAdmin, self).get_urls()
+        urls = super(SortableAdminMixin, self).get_urls()
 
         # this ajax view changes the order
         admin_do_sorting_url = url(r'^sorting/do-sorting/(?P<model_type_id>\d+)/$',
-            self.admin_site.admin_view(self.do_sorting_view),
+            # FIXME : Django CMS dosn't have the admin_site since 3.X
+            # self.admin_site.admin_view(self.do_sorting_view),
+            self.do_sorting_view,
             name='admin_do_sorting')
 
         # this view displays the sortable objects
         admin_sort_url = url(r'^sort/$',
-            self.admin_site.admin_view(self.sort_view),
+            # FIXME : Django CMS dosn't have the admin_site since 3.X
+            # self.admin_site.admin_view(self.sort_view),
+            self.sort_view,
             name='admin_sort')
 
         if VERSION > (1, 7):
@@ -105,6 +102,9 @@ class SortableAdmin(SortableAdminBase, ModelAdmin):
                 admin_sort_url,)
 
         return admin_urls + urls
+
+    #Extra function for Django-CMS 3.X
+    get_plugin_urls = get_urls
 
     def sort_view(self, request):
         """
@@ -227,7 +227,7 @@ class SortableAdmin(SortableAdminBase, ModelAdmin):
         extra_context.update({
             'change_form_template_extends': self.change_form_template_extends
         })
-        return super(SortableAdmin, self).add_view(request, form_url,
+        return super(SortableAdminMixin, self).add_view(request, form_url,
             extra_context=extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
@@ -262,7 +262,7 @@ class SortableAdmin(SortableAdminBase, ModelAdmin):
                 self.has_sortable_stacked_inlines
             })
 
-        return super(SortableAdmin, self).change_view(request, object_id,
+        return super(SortableAdminMixin, self).change_view(request, object_id,
             form_url='', extra_context=extra_context)
 
     def do_sorting_view(self, request, model_type_id=None):
@@ -310,11 +310,23 @@ class SortableAdmin(SortableAdminBase, ModelAdmin):
             content_type='application/json')
 
 
-class NonSortableParentAdmin(SortableAdmin):
+class SortableAdmin(SortableAdminMixin, ModelAdmin):
+    """
+    Admin class to add template overrides and context objects to enable
+    drag-and-drop ordering.
+    """
+
+    class Meta:
+        abstract = True
+
+class NonSortableParentAdminMixin(SortableAdminMixin):
     def changelist_view(self, request, extra_context=None):
         return super(SortableAdminBase, self).changelist_view(request,
             extra_context=extra_context)
 
+
+class NonSortableParentAdmin(NonSortableParentAdminMixin,SortableAdmin):
+    pass
 
 class SortableInlineBase(SortableAdminBase, InlineModelAdmin):
     def __init__(self, *args, **kwargs):

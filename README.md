@@ -432,8 +432,9 @@ specified:
 ```python
 # example plugin
 from cms.plugin_base import CMSPluginBase
+from adminsortable.admin import NonSortableParentAdminMixin, SortableStackedInline
 
-class CMSCarouselPlugin(CMSPluginBase):
+class CMSCarouselPlugin(NonSortableParentAdminMixin, CMSPluginBase):
     admin_preview = False
     change_form_template = 'cms/sortable-stacked-inline-change-form.html'
     inlines = [SlideInline]
